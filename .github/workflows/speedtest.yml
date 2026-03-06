@@ -16,6 +16,115 @@ jobs:
           tar xzf speedtest.tgz
           chmod +x speedtest
 
-      - name: Run Speedtest
+      - name: Find Best Server & Run Speedtest
         run: |
-          ./speedtest --accept-license --accept-gdpr
+          echo "============================================"
+          echo "  🔍 SCANNING FOR BEST SERVER"
+          echo "============================================"
+          echo ""
+
+          # Get list of nearby servers (top 10 by latency)
+          echo "📡 Listing nearby servers..."
+          SERVER_LIST=$(./speedtest --accept-license --accept-gdpr --servers --format=json 2>/dev/null)
+          
+          # Extract server IDs from the list (top 10 closest)
+          SERVER_IDS=$(echo "$SERVER_LIST" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          servers = data.get('servers', [])[:10]
+          for s in servers:
+              print(f\"{s['id']}|{s['name']}|{s['location']}|{s['host']}\")
+          ")
+          
+          echo "$SERVER_IDS" | head -10
+          echo ""
+          echo "============================================"
+          echo "  🏁 TESTING TOP SERVERS"
+          echo "============================================"
+          echo ""
+
+          BEST_DOWNLOAD=0
+          BEST_SERVER=""
+          BEST_RESULT=""
+          TESTED=0
+
+          # Test top 5 servers and find the fastest
+          while IFS='|' read -r SID SNAME SLOC SHOST; do
+            [ -z "$SID" ] && continue
+            TESTED=$((TESTED + 1))
+            [ $TESTED -gt 5 ] && break
+
+            echo "⚡ Testing server #$TESTED: $SNAME ($SLOC) [ID: $SID]..."
+            
+            RESULT=$(./speedtest --accept-license --accept-gdpr --server-id=$SID --format=json 2>/dev/null)
+            
+            if [ $? -eq 0 ] && [ -n "$RESULT" ]; then
+              DL=$(echo "$RESULT" | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              bw = d.get('download', {}).get('bandwidth', 0)
+              # bandwidth is in bytes/sec, convert to Mbps
+              mbps = (bw * 8) / 1000000
+              print(f'{mbps:.2f}')
+          except:
+              print('0')
+          ")
+              UL=$(echo "$RESULT" | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              bw = d.get('upload', {}).get('bandwidth', 0)
+              mbps = (bw * 8) / 1000000
+              print(f'{mbps:.2f}')
+          except:
+              print('0')
+          ")
+              LATENCY=$(echo "$RESULT" | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              print(f\"{d.get('ping', {}).get('latency', 0):.2f}\")
+          except:
+              print('0')
+          ")
+              URL=$(echo "$RESULT" | python3 -c "
+          import sys, json
+          try:
+              d = json.load(sys.stdin)
+              print(d.get('result', {}).get('url', 'N/A'))
+          except:
+              print('N/A')
+          ")
+              
+              echo "   📥 Download: ${DL} Mbps | 📤 Upload: ${UL} Mbps | 🏓 Latency: ${LATENCY} ms"
+              echo ""
+              
+              # Compare downloads to find best (use python for float comparison)
+              IS_BETTER=$(python3 -c "print('yes' if float('${DL}') > float('${BEST_DOWNLOAD}') else 'no')")
+              if [ "$IS_BETTER" = "yes" ]; then
+                BEST_DOWNLOAD="$DL"
+                BEST_UPLOAD="$UL"
+                BEST_LATENCY="$LATENCY"
+                BEST_SERVER="$SNAME ($SLOC)"
+                BEST_SERVER_ID="$SID"
+                BEST_URL="$URL"
+              fi
+            else
+              echo "   ❌ Failed to test this server, skipping..."
+              echo ""
+            fi
+          done <<< "$SERVER_IDS"
+
+          echo ""
+          echo "============================================"
+          echo "  🏆 BEST SERVER RESULTS"
+          echo "============================================"
+          echo ""
+          echo "  🖥️  Server:    $BEST_SERVER [ID: $BEST_SERVER_ID]"
+          echo "  📥  Download:  $BEST_DOWNLOAD Mbps"
+          echo "  📤  Upload:    $BEST_UPLOAD Mbps"  
+          echo "  🏓  Latency:   $BEST_LATENCY ms"
+          echo "  🔗  Result:    $BEST_URL"
+          echo ""
+          echo "============================================"
