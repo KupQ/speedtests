@@ -15,9 +15,10 @@ jobs:
         with:
           usesh: true
           prepare: |
-            pkg install -y curl
+            pkg install -y curl ca_root_nss
           run: |
-            curl -L -o speedtest.tgz https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-freebsd-x86_64.tgz
-            tar xzf speedtest.tgz
-            chmod +x speedtest
-            ./speedtest --accept-license --accept-gdpr
+            # Install speedtest via Ookla's FreeBSD repo
+            pkg install -y gnupg
+            curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.freebsd.sh | sh
+            pkg install -y speedtest
+            speedtest --accept-license --accept-gdpr
