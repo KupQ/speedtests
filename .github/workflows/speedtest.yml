@@ -8,14 +8,15 @@ on:
 
 jobs:
   speedtest:
-    runs-on: ubuntu-24.04-arm64
+    runs-on: windows-11-arm
     steps:
       - name: Download Ookla Speedtest CLI
         run: |
-          wget -q https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-aarch64.tgz -O speedtest.tgz
-          tar xzf speedtest.tgz
-          chmod +x speedtest
+          Invoke-WebRequest -Uri "https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-win64.zip" -OutFile speedtest.zip
+          Expand-Archive -Path speedtest.zip -DestinationPath .
+        shell: pwsh
 
       - name: Run Speedtest
         run: |
-          ./speedtest --accept-license --accept-gdpr
+          .\speedtest.exe --accept-license --accept-gdpr
+        shell: pwsh
