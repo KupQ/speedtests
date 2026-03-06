@@ -15,8 +15,9 @@ jobs:
         with:
           usesh: true
           prepare: |
-            pkg install -y curl libidn2 ca_root_nss
+            pkg install -y curl
           run: |
-            fetch https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-freebsd-x86_64.pkg.txz -o speedtest.pkg.txz
-            pkg add speedtest.pkg.txz
-            speedtest --accept-license --accept-gdpr
+            curl -L -o speedtest.tgz https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-freebsd-x86_64.tgz
+            tar xzf speedtest.tgz
+            chmod +x speedtest
+            ./speedtest --accept-license --accept-gdpr
