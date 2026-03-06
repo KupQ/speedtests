@@ -10,12 +10,13 @@ jobs:
   speedtest:
     runs-on: ubuntu-latest
     steps:
-      - name: Download Ookla Speedtest CLI
-        run: |
-          wget -q https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz -O speedtest.tgz
-          tar xzf speedtest.tgz
-          chmod +x speedtest
-
-      - name: Run Speedtest
-        run: |
-          ./speedtest --accept-license --accept-gdpr
+      - name: Run Speedtest on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y curl libidn2 ca_root_nss
+          run: |
+            fetch https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-freebsd-x86_64.pkg.txz -o speedtest.pkg.txz
+            pkg add speedtest.pkg.txz
+            speedtest --accept-license --accept-gdpr
