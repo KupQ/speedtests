@@ -9,9 +9,6 @@ on:
 jobs:
   speedtest:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        run: [1, 2, 3, 4, 5]
     steps:
       - name: Download Ookla Speedtest CLI
         run: |
@@ -19,30 +16,6 @@ jobs:
           tar xzf speedtest.tgz
           chmod +x speedtest
 
-      - name: Run Speedtest (Runner ${{ matrix.run }})
-        id: test
+      - name: Run Speedtest
         run: |
-          RESULT=$(./speedtest --accept-license --accept-gdpr --format=json 2>/dev/null)
-
-          DL=$(echo "$RESULT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(f'{(d[\"download\"][\"bandwidth\"]*8)/1000000:.2f}')")
-          UL=$(echo "$RESULT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(f'{(d[\"upload\"][\"bandwidth\"]*8)/1000000:.2f}')")
-          LATENCY=$(echo "$RESULT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(f'{d[\"ping\"][\"latency\"]:.2f}')")
-          SERVER=$(echo "$RESULT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(f'{d[\"server\"][\"name\"]} - {d[\"server\"][\"location\"]}')")
-          ISP=$(echo "$RESULT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['isp'])")
-          URL=$(echo "$RESULT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['result']['url'])")
-          IP=$(echo "$RESULT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['interface']['externalIp'])")
-          REGION=$(curl -s http://ipinfo.io/$IP/region 2>/dev/null || echo "Unknown")
-
-          echo ""
-          echo "============================================"
-          echo "  🖥️  RUNNER #${{ matrix.run }} — $REGION"
-          echo "============================================"
-          echo "  🌐 External IP:  $IP"
-          echo "  � Region:       $REGION"
-          echo "  🏢 ISP:          $ISP"
-          echo "  📡 Server:       $SERVER"
-          echo "  📥 Download:     $DL Mbps"
-          echo "  📤 Upload:       $UL Mbps"
-          echo "  🏓 Latency:      $LATENCY ms"
-          echo "  🔗 Result:       $URL"
-          echo "============================================"
+          ./speedtest --accept-license --accept-gdpr
