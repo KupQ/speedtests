@@ -1,0 +1,21 @@
+name: Speedtest
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+
+jobs:
+  speedtest:
+    runs-on: ubuntu-24.04-arm64
+    steps:
+      - name: Download Ookla Speedtest CLI
+        run: |
+          wget -q https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-aarch64.tgz -O speedtest.tgz
+          tar xzf speedtest.tgz
+          chmod +x speedtest
+
+      - name: Run Speedtest
+        run: |
+          ./speedtest --accept-license --accept-gdpr
